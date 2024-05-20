@@ -41,7 +41,7 @@ model_to = st.sidebar.selectbox(
 # Load Pre-trained ML Model
 #model_path = './weigths/yolov8n.pt'
 try:
-    model = YOLO(str("./weigths/"+model_path))
+    model = YOLO(str("./weights/"+model_path))
     model.to(model_to)
 except Exception as ex:
     st.error(f"Unable to load model. Check the specified path: {model_path}")
