@@ -26,7 +26,7 @@ source_radio = st.sidebar.radio(
     "Type de visualisation", settings.SOURCES_LIST,index=0)
 
 # Listing all model paths in the weights folder
-weight_files = os.listdir("./weigths")
+weight_files = os.listdir("./weights")
 
 model_path = st.sidebar.selectbox(
     "Choix du modèle YOLO",
