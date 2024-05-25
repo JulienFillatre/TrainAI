@@ -4,10 +4,11 @@ from collections import defaultdict
 
 from ultralytics.utils.checks import check_requirements
 from ultralytics.utils.plotting import Annotator, colors
+import cv2
 
 check_requirements("shapely>=2.0.0")
 
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString
 
 
 class ObjectCounter:
@@ -95,17 +96,8 @@ class ObjectCounter:
         self.track_thickness = track_thickness
         self.heightLine = heightLine
         self.deltaHeightLine = deltaHeightline
-
-        # Region and line selection
-        if len(reg_pts) == 2:
-            print("Line Counter Initiated.")
-            self.reg_pts = reg_pts
-            self.counting_region = LineString(self.reg_pts)
-        else:
-            print("Invalid Region points provided, region_points must be 2 for lines")
-            print("Using Line Counter Now")
-            self.counting_region = LineString(self.reg_pts)
-
+        self.reg_pts = reg_pts
+        self.counting_region = LineString(self.reg_pts)
         self.names = classes_names
         self.track_color = track_color
         self.count_txt_color = count_txt_color
@@ -115,6 +107,7 @@ class ObjectCounter:
         self.line_dist_thresh = line_dist_thresh
         self.cls_txtdisplay_gap = cls_txtdisplay_gap
 
+
     def extract_and_process_tracks(self, tracks):
         """Extracts and processes tracks for object counting in a video stream."""
 
@@ -123,6 +116,7 @@ class ObjectCounter:
 
         # Draw region or line
         self.annotator.draw_region(reg_pts=self.reg_pts, color=self.region_color, thickness=self.region_thickness)
+        
 
         if tracks[0].boxes.id is not None:
             boxes = tracks[0].boxes.xyxy.cpu()
@@ -131,55 +125,41 @@ class ObjectCounter:
 
             # Extract tracks
             for box, track_id, cls in zip(boxes, track_ids, clss):
-                x, y, w, h = box
+                #x, y, w, h = box
+                x_center = int((box[0] + box[2]) / 2)
+                y_center = int((box[1] + box[3]) / 2)
                 # Draw bounding box
-                self.annotator.box_label(box, label=f"{self.names[cls]}#{track_id}", color=colors(int(track_id), True))
-
+                self.annotator.box_label(box, label=f"{self.names[cls]}{track_id}", color=colors(int(track_id), True))
+                cv2.circle(self.im0,(x_center,y_center), 5, (0,0,255), -1)
                 # Store class info
                 if self.names[cls] not in self.class_wise_count:
-                    if len(self.names[cls]) > 5:
-                        self.names[cls] = self.names[cls][:5]
+                    if len(self.names[cls]) > 6:
+                        self.names[cls] = self.names[cls][:6]
                     self.class_wise_count[self.names[cls]] = {"in": 0, "out": 0}
+                #Never registered
+                if(track_id not in self.count_ids_up and track_id not in self.count_ids_down):
+                    if y_center >= self.heightLine + self.deltaHeightLine : 
+                        self.count_ids_down.append(track_id)
+                    if y_center <= self.heightLine - self.deltaHeightLine: 
+                        self.count_ids_up.append(track_id)
+                
+                #Count in UP
+                if(track_id in self.count_ids_up and track_id not in self.count_ids_down):
+                    if y_center >= self.heightLine + self.deltaHeightLine :
+                        if track_id not in self.track_ids_out : 
+                            self.count_ids_up.remove(track_id)
+                            self.track_ids_out.append(track_id) 
+                            self.out_counts += 1
+                            self.class_wise_count[self.names[cls]]["out"] += 1
 
-                # Count objects using line
-                if len(self.reg_pts) == 2:
-                    if(track_id not in self.count_ids_up and track_id not in self.count_ids_down):
-                        if int(y) >= self.heightLine + self.deltaHeightLine : 
-                            self.count_ids_down.append(track_id)
-                        if int(y) <= self.heightLine - self.deltaHeightLine: 
-                            self.count_ids_up.append(track_id)
-                    
-                    #Condition dans une liste présente 
-                    if(track_id in self.count_ids_up and track_id not in self.count_ids_down):
-                        if int(y) >= self.heightLine + self.deltaHeightLine :
-                            if track_id not in self.track_ids_out : 
-                                self.count_ids_up.remove(track_id)
-                                self.track_ids_out.append(track_id) 
-                                self.out_counts += 1
-                                self.class_wise_count[self.names[cls]]["out"] += 1
-
-
-                    if(track_id not in self.count_ids_up and track_id in self.count_ids_down):
-                        if int(y) <= self.heightLine - self.deltaHeightLine :
-                            if track_id not in self.track_ids_in : 
-                                self.count_ids_down.remove(track_id)
-                                self.track_ids_in.append(track_id) 
-                                self.in_counts += 1
-                                self.class_wise_count[self.names[cls]]["in"] += 1
-                             
-                        
-
-                            
-                            
-                            #recup hauteur ligne
-                            #si id dans partie basse et déjà ajouté dans partie haute alors out 
-                            #si id dans partie basse et non dans partie haute ajout id dans liste_partie-basse
-                            #si id dans partie haute et déjà présent dans partie basse alors in 
-                            #si id dans partie haute et non dans partie basse alors ajout id liste_partie-haute 
-                            #Créer deux cotés, si track_id a up alors track_id.append(track_id_up)
-                            #Si track id dans track_id-up, verifie si track_id dans track_id_down
-                                #Si dans 
-
+                #Count in Down
+                if(track_id not in self.count_ids_up and track_id in self.count_ids_down):
+                    if y_center <= self.heightLine - self.deltaHeightLine :
+                        if track_id not in self.track_ids_in : 
+                            self.count_ids_down.remove(track_id)
+                            self.track_ids_in.append(track_id) 
+                            self.in_counts += 1
+                            self.class_wise_count[self.names[cls]]["in"] += 1
 
         label = ""
 
