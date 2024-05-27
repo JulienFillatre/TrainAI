@@ -21,9 +21,9 @@ st.sidebar.image(logo_url)
 
 videoType = st.sidebar.radio("Type de Lien", ("Stream Youtube", "Stream Lien Local"))
 isYoutube = True if videoType == 'Stream Youtube' else False
-sourceVideo = st.sidebar.text_input("Lien vers le flux video", value="https://www.youtube.com/watch?v=gFRtAAmiFbE")
+sourceVideo = st.sidebar.text_input("Lien vers le flux video", value="https://www.youtube.com/watch?v=YLSELFy-iHQ")
 source_radio = st.sidebar.radio(
-    "Type de visualisation", settings.SOURCES_LIST,index=0)
+    "Type de visualisation", settings.SOURCES_LIST,index=1)
 
 # Listing all model paths in the weights folder
 weight_files = os.listdir("./weights")
@@ -35,7 +35,7 @@ model_path = st.sidebar.selectbox(
 
 model_to = st.sidebar.selectbox(
     "Choix du Processeur de Calcul",
-    ("cpu","mps","cuda")
+    ("mps","cpu","cuda")
 )
 
 # Load Pre-trained ML Model
@@ -48,16 +48,16 @@ except Exception as ex:
     st.error(ex)
 
 confidence = float(st.sidebar.slider(
-    "Confiance du Modèle", 25, 100, 35)) / 100
+    "Confiance du Modèle", 25, 100, 25)) / 100
 
 iou = float(st.sidebar.slider(
     "IOU", 0, 100, 30))/100
 
 contrast = float(st.sidebar.slider(
-    "Contrast", 0, 200, 100))/100
+    "Contraste", 0, 200, 100))/100
 
 brightness = float(st.sidebar.slider(
-    "Brightness", 0, 1000, 200))/10
+    "Luminosité", 0, 1000, 200))/10
 
 # Créer un dictionnaire associant chaque classe à un nombre
 class_mapping = {idx: class_name for idx, class_name in enumerate(settings.classNames)}
@@ -68,7 +68,7 @@ if use_selected_classes:
 else:
     selected_classes_ids = list(class_mapping.keys())
 
-resolutionVideo = st.sidebar.radio("Choix de la résolution de traitement et d'affichage (ne peut excéder la résolution de la source)", (240,360,480,720,1080),index=3)
+resolutionVideo = st.sidebar.radio("Choix de la résolution de traitement et d'affichage (ne peut excéder la résolution de la source)", (240,360,480,720,1080),index=2)
 
 displayOriginalVideo = st.sidebar.radio("Afficher le stream original ?", ("Non", "Oui"))
 isDisplayOriginal = True if displayOriginalVideo == 'Oui' else False
